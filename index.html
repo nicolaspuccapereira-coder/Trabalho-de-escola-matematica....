@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quest: O Reino dos Cálculos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        /* Custom Glowing Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
+
+    <!-- HEADER / HUD -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-xl font-bold shadow-lg shadow-indigo-500/30">
+                    ∑
+                </div>
+                <div>
+                    <h1 class="pixel-font text-xs sm:text-sm text-indigo-400 tracking-wider">MATH QUEST</h1>
+                    <p class="text-xs text-slate-400">O Reino dos Cálculos</p>
+                </div>
+            </div>
+
+            <!-- LEVEL INDICATOR -->
+            <div id="level-badges" class="flex gap-2">
+                <span id="badge-1" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-500 border border-slate-700">1. Trigonometria</span>
+                <span id="badge-2" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-500 border border-slate-700">2. Quadrática</span>
+                <span id="badge-3" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-500 border border-slate-700">3. Exponencial</span>
+            </div>
+
+            <!-- SCORE & SOUND -->
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block">Pontuação</span>
+                    <span id="score-display" class="pixel-font text-yellow-400 text-sm">0000</span>
+                </div>
+                <button id="sound-btn" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 transition">
+                    🔊
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-6xl w-full mx-auto p-4 flex-grow flex flex-col justify-center items-center relative">
+
+        <!-- GAME CANVAS CONTAINER -->
+        <div class="relative w-full aspect-[16/9] max-h-[600px] bg-slate-900 rounded-xl overflow-hidden border-2 border-slate-800 shadow-2xl flex items-center justify-center">
+            
+            <!-- CANVAS -->
+            <canvas id="gameCanvas" width="960" height="540" class="w-full h-full block bg-slate-950"></canvas>
+
+            <!-- OVERLAY MODAL / TUTORIAL / VICTORY -->
+            <div id="overlay-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-40 transition-all duration-300">
+                
+                <!-- START MENU -->
+                <div id="menu-content" class="max-w-xl space-y-6">
+                    <div class="inline-block px-4 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-400 text-sm mb-2">
+                        Desafio Interativo de Matemática
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                        MATH QUEST
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        Domine as forças da Trigonometria, Parábolas e Crescimento Exponencial para restaurar o equilíbrio no Reino dos Cálculos!
+                    </p>
+                    <button id="start-btn" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/40 pixel-font text-xs sm:text-sm tracking-wider transition">
+                        INICIAR JORNADA
+                    </button>
+                </div>
+
+                <!-- TUTORIAL MODAL -->
+                <div id="tutorial-content" class="hidden max-w-xl space-y-4 text-left">
+                    <h3 id="tut-title" class="pixel-font text-indigo-400 text-sm sm:text-base border-b border-slate-800 pb-2">Instruções</h3>
+                    <div id="tut-body" class="text-slate-300 text-sm space-y-2">
+                        <!-- Dynamic tutorial text inserted here -->
+                    </div>
+                    <button id="tut-start-btn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl pixel-font text-xs tracking-wider transition mt-4">
+                        COMEÇAR FASE
+                    </button>
+                </div>
+
+                <!-- GAME OVER / WIN MODAL -->
+                <div id="end-content" class="hidden max-w-xl space-y-6">
+                    <h3 id="end-title" class="text-4xl font-extrabold text-yellow-400">VITÓRIA!</h3>
+                    <p id="end-message" class="text-slate-300 text-sm">Você dominou todas as funções e salvou o Reino!</p>
+                    <div class="p-4 bg-slate-900 rounded-lg border border-slate-800 flex justify-around text-center">
+                        <div>
+                            <span class="text-xs text-slate-500 block">Pontuação Final</span>
+                            <span id="end-score" class="pixel-font text-xl text-yellow-400">0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-500 block">Classificação</span>
+                            <span id="end-rank" class="pixel-font text-xl text-indigo-400">S+</span>
+                        </div>
+                    </div>
+                    <button id="restart-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl pixel-font text-xs tracking-wider transition">
+                        JOGAR NOVAMENTE
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CONTROL PANEL (Dynamic per Phase) -->
+        <div id="controls-panel" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mt-4 shadow-lg min-h-[120px] flex flex-col justify-center">
+            
+            <!-- PHASE 1 CONTROLS -->
+            <div id="controls-p1" class="hidden flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-indigo-300 font-semibold">Ângulo (θ): <span id="p1-angle-val" class="text-white">45</span>°</label>
+                        <span class="text-slate-400">Ajuste a inclinação</span>
+                    </div>
+                    <input type="range" id="p1-angle" min="15" max="75" value="45" class="w-full accent-indigo-500">
+                </div>
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-pink-300 font-semibold">Força (Hipotenusa V₀): <span id="p1-power-val" class="text-white">60</span></label>
+                        <span class="text-slate-400">Alcance inicial</span>
+                    </div>
+                    <input type="range" id="p1-power" min="30" max="90" value="60" class="w-full accent-pink-500">
+                </div>
+                <button id="p1-fire-btn" class="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold rounded-lg shadow-lg shadow-red-600/30 pixel-font text-xs transition">
+                    DISPARAR!
+                </button>
+            </div>
+
+            <!-- PHASE 2 CONTROLS -->
+            <div id="controls-p2" class="hidden flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-amber-300 font-semibold">Curvatura (a): <span id="p2-a-val" class="text-white">-0.005</span></label>
+                    </div>
+                    <input type="range" id="p2-a" min="-0.015" max="-0.001" step="0.001" value="-0.005" class="w-full accent-amber-500">
+                </div>
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-emerald-300 font-semibold">Vértice X (Xᵥ): <span id="p2-xv-val" class="text-white">480</span></label>
+                    </div>
+                    <input type="range" id="p2-xv" min="200" max="700" value="480" class="w-full accent-emerald-500">
+                </div>
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-cyan-300 font-semibold">Altura Max (Yᵥ): <span id="p2-yv-val" class="text-white">250</span></label>
+                    </div>
+                    <input type="range" id="p2-yv" min="150" max="400" value="250" class="w-full accent-cyan-500">
+                </div>
+                <button id="p2-launch-btn" class="w-full md:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-lg shadow-lg shadow-emerald-600/30 pixel-font text-xs transition">
+                    SALTAR!
+                </button>
+            </div>
+
+            <!-- PHASE 3 CONTROLS -->
+            <div id="controls-p3" class="hidden flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-indigo-300 font-semibold">Taxa de Crescimento (b): <span id="p3-b-val" class="text-white">1.5</span></label>
+                    </div>
+                    <input type="range" id="p3-b" min="1.1" max="2.5" step="0.1" value="1.5" class="w-full accent-indigo-500">
+                </div>
+                <div class="flex-1 w-full space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-purple-300 font-semibold">Tempo de Pulso (t): <span id="p3-t-val" class="text-white">3</span></label>
+                    </div>
+                    <input type="range" id="p3-t" min="1" max="6" step="1" value="3" class="w-full accent-purple-500">
+                </div>
+                <button id="p3-pulse-btn" class="w-full md:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold rounded-lg shadow-lg shadow-purple-600/30 pixel-font text-xs transition">
+                    DESCARGA ELETRO-EXPONENCIAL!
+                </button>
+            </div>
+
+            <!-- DEFAULT IDLE MSG -->
+            <div id="controls-idle" class="text-center text-slate-500 text-sm">
+                Aguardando início do jogo...
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-3 text-center text-xs text-slate-500">
+        Math Quest &copy; 2026 - Desenvolvido para Aprendizado Interativo de Matemática. Pronto para GitHub Pages.
+    </footer>
+
+    <!-- GAME LOGIC SCRIPT -->
+    <script>
+        // --- AUDIO SYNTHESIS (Web Audio API) ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playTone(freq, type, duration, vol=0.1) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+            shoot() { this.playTone(300, 'square', 0.15, 0.15); }
+            hit() { 
+                this.playTone(150, 'sawtooth', 0.2, 0.2); 
+                setTimeout(() => this.playTone(400, 'sine', 0.3, 0.2), 100);
+            }
+            coin() {
+                this.playTone(800, 'sine', 0.1, 0.1);
+                setTimeout(() => this.playTone(1200, 'sine', 0.15, 0.1), 80);
+            }
+            fail() { this.playTone(120, 'sawtooth', 0.4, 0.2); }
+            win() {
+                [400, 500, 600, 800].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'triangle', 0.2, 0.15), i * 100);
+                });
+            }
+        }
+
+        const sfx = new SoundFX();
+        document.getElementById('sound-btn').addEventListener('click', () => {
+            sfx.muted = !sfx.muted;
+            document.getElementById('sound-btn').innerText = sfx.muted ? '🔇' : '🔊';
+        });
+
+        // --- GAME ENGINE & STATES ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'MENU'; // MENU, TUTORIAL, PLAYING, END
+        let currentPhase = 1;
+        let score = 0;
+
+        // Phase 1 Variables (Trigonometry)
+        let p1 = {
+            angle: 45,
+            power: 60,
+            cannonX: 100,
+            cannonY: 450,
+            targetX: 700,
+            targetY: 450,
+            targetR: 35,
+            projectile: null,
+            attempts: 3
+        };
+
+        // Phase 2 Variables (Quadratic Parabola)
+        let p2 = {
+            a: -0.005,
+            xv: 480,
+            yv: 250,
+            hero: { x: 100, y: 450, progress: 0, active: false },
+            coins: [],
+            portal: { x: 860, y: 450, r: 30 }
+        };
+
+        // Phase 3 Variables (Exponential Growth)
+        let p3 = {
+            b: 1.5,
+            t: 3,
+            targetEnergy: 0,
+            currentVirus: 10,
+            timeElapsed: 0,
+            maxTime: 10,
+            pulsesLeft: 3,
+            active: false,
+            threats: []
+        };
+
+        // --- DOM ELEMENTS ---
+        const overlay = document.getElementById('overlay-screen');
+        const menuContent = document.getElementById('menu-content');
+        const tutContent = document.getElementById('tutorial-content');
+        const endContent = document.getElementById('end-content');
+        const scoreDisplay = document.getElementById('score-display');
+
+        const tutTitle = document.getElementById('tut-title');
+        const tutBody = document.getElementById('tut-body');
+
+        // Control Panels
+        const ctrlP1 = document.getElementById('controls-p1');
+        const ctrlP2 = document.getElementById('controls-p2');
+        const ctrlP3 = document.getElementById('controls-p3');
+        const ctrlIdle = document.getElementById('controls-idle');
+
+        // --- EVENT LISTENERS FOR INPUTS ---
+        // Phase 1
+        document.getElementById('p1-angle').addEventListener('input', (e) => {
+            p1.angle = parseFloat(e.target.value);
+            document.getElementById('p1-angle-val').innerText = p1.angle;
+        });
+        document.getElementById('p1-power').addEventListener('input', (e) => {
+            p1.power = parseFloat(e.target.value);
+            document.getElementById('p1-power-val').innerText = p1.power;
+        });
+        document.getElementById('p1-fire-btn').addEventListener('click', fireP1);
+
+        // Phase 2
+        document.getElementById('p2-a').addEventListener('input', (e) => {
+            p2.a = parseFloat(e.target.value);
+            document.getElementById('p2-a-val').innerText = p2.a.toFixed(3);
+        });
+        document.getElementById('p2-xv').addEventListener('input', (e) => {
+            p2.xv = parseFloat(e.target.value);
+            document.getElementById('p2-xv-val').innerText = p2.xv;
+        });
+        document.getElementById('p2-yv').addEventListener('input', (e) => {
+            p2.yv = parseFloat(e.target.value);
+            document.getElementById('p2-yv-val').innerText = p2.yv;
+        });
+        document.getElementById('p2-launch-btn').addEventListener('click', launchP2);
+
+        // Phase 3
+        document.getElementById('p3-b').addEventListener('input', (e) => {
+            p3.b = parseFloat(e.target.value);
+            document.getElementById('p3-b-val').innerText = p3.b.toFixed(1);
+        });
+        document.getElementById('p3-t').addEventListener('input', (e) => {
+            p3.t = parseFloat(e.target.value);
+            document.getElementById('p3-t-val').innerText = p3.t;
+        });
+        document.getElementById('p3-pulse-btn').addEventListener('click', pulseP3);
+
+        // Menu Buttons
+        document.getElementById('start-btn').addEventListener('click', () => {
+            sfx.init();
+            startPhaseTutorial(1);
+        });
+        document.getElementById('tut-start-btn').addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            gameState = 'PLAYING';
+            setupPhaseControls(currentPhase);
+        });
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            score = 0;
+            scoreDisplay.innerText = '0000';
+            startPhaseTutorial(1);
+        });
+
+        // --- GAME FLOW LOGIC ---
+
+        function updateBadges() {
+            for (let i = 1; i <= 3; i++) {
+                let badge = document.getElementById(`badge-${i}`);
+                if (i === currentPhase) {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/30";
+                } else if (i < currentPhase) {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800";
+                } else {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-500 border border-slate-700";
+                }
+            }
+        }
+
+        function setupPhaseControls(phase) {
+            ctrlP1.classList.add('hidden');
+            ctrlP2.classList.add('hidden');
+            ctrlP3.classList.add('hidden');
+            ctrlIdle.classList.add('hidden');
+
+            if (phase === 1) {
+                ctrlP1.classList.remove('hidden');
+                ctrlP1.classList.add('flex');
+                initPhase1();
+            } else if (phase === 2) {
+                ctrlP2.classList.remove('hidden');
+                ctrlP2.classList.add('flex');
+                initPhase2();
+            } else if (phase === 3) {
+                ctrlP3.classList.remove('hidden');
+                ctrlP3.classList.add('flex');
+                initPhase3();
+            }
+            updateBadges();
+        }
+
+        function startPhaseTutorial(phase) {
+            currentPhase = phase;
+            gameState = 'TUTORIAL';
+            overlay.classList.remove('hidden');
+            menuContent.classList.add('hidden');
+            endContent.classList.add('hidden');
+            tutContent.classList.remove('hidden');
+
+            updateBadges();
+
+            if (phase === 1) {
+                tutTitle.innerText = "Fase 1: O Canhão Trigonométrico";
+                tutBody.innerHTML = `
+                    <p><strong>Conceito Math:</strong> Decomposição de Vetores & Trig Ratios.</p>
+                    <p class="text-slate-400 text-xs mt-1">Ao disparar um projétil num ângulo <strong>θ</strong>:</p>
+                    <ul class="list-disc list-inside text-xs text-indigo-300 space-y-1 my-2">
+                        <li>Componente Horizontal: <strong>Vₓ = V₀ · cos(θ)</strong></li>
+                        <li>Componente Vertical: <strong>Vᵧ = V₀ · sen(θ)</strong></li>
+                        <li>Tangente: <strong>tan(θ) = Altura / Alcance</strong></li>
+                    </ul>
+                    <p class="text-xs">Ajuste o ângulo e a força do canhão para acertar o alvo do outro lado do vale!</p>
+                `;
+            } else if (phase === 2) {
+                tutTitle.innerText = "Fase 2: A Ponte Parabólica";
+                tutBody.innerHTML = `
+                    <p><strong>Conceito Math:</strong> Função Quadrática <i>f(x) = a(x - Xᵥ)² + Yᵥ</i></p>
+                    <p class="text-slate-400 text-xs mt-1">A trajetória do salto forma uma Parábola:</p>
+                    <ul class="list-disc list-inside text-xs text-amber-300 space-y-1 my-2">
+                        <li><strong>a &lt; 0:</strong> Concavidade para baixo (formato de arco).</li>
+                        <li><strong>(Xᵥ, Yᵥ):</strong> Vértice da parábola (Ponto mais alto do salto).</li>
+                    </ul>
+                    <p class="text-xs">Ajuste os parâmetros da parábola para que o herói colete todas as moedas e pouse em segurança no portal!</p>
+                `;
+            } else if (phase === 3) {
+                tutTitle.innerText = "Fase 3: O Pulso Exponencial";
+                tutBody.innerHTML = `
+                    <p><strong>Conceito Math:</strong> Crescimento Exponencial <i>f(t) = a · bᵗ</i></p>
+                    <p class="text-slate-400 text-xs mt-1">A ameaça mutante cresce multiplicativamente a cada segundo!</p>
+                    <ul class="list-disc list-inside text-xs text-purple-300 space-y-1 my-2">
+                        <li><strong>b:</strong> Fator/Base de crescimento.</li>
+                        <li><strong>t:</strong> Unidades de tempo de carga.</li>
+                    </ul>
+                    <p class="text-xs">Calcule a energia exata gerada por <i>E = 10 · bᵗ</i> para igualar a massa da ameaça e neutralizá-la antes que alcance a cidade!</p>
+                `;
+            }
+        }
+
+        function addScore(points) {
+            score += points;
+            scoreDisplay.innerText = String(score).padStart(4, '0');
+        }
+
+        function triggerWin() {
+            gameState = 'END';
+            overlay.classList.remove('hidden');
+            tutContent.classList.add('hidden');
+            endContent.classList.remove('hidden');
+            
+            sfx.win();
+
+            document.getElementById('end-title').innerText = "VITÓRIA MAGNÍFICA!";
+            document.getElementById('end-message').innerText = "Você dominou a Trigonometria, as Parábolas e o Crescimento Exponencial!";
+            document.getElementById('end-score').innerText = score;
+            
+            let rank = 'C';
+            if (score >= 2500) rank = 'S+';
+            else if (score >= 2000) rank = 'A';
+            else if (score >= 1500) rank = 'B';
+            document.getElementById('end-rank').innerText = rank;
+        }
+
+        // --- PHASE 1 LOGIC ---
+        function initPhase1() {
+            p1.targetX = 650 + Math.random() * 200;
+            p1.targetY = 250 + Math.random() * 200;
+            p1.projectile = null;
+            p1.attempts = 3;
+        }
+
+        function fireP1() {
+            if (p1.projectile) return;
+            sfx.shoot();
+            
+            let rad = p1.angle * (Math.PI / 180);
+            let speed = p1.power * 0.25;
+
+            p1.projectile = {
+                x: p1.cannonX,
+                y: p1.cannonY,
+                vx: speed * Math.cos(rad),
+                vy: -speed * Math.sin(rad),
+                trail: []
+            };
+        }
+
+        function updateP1() {
+            if (!p1.projectile) return;
+
+            let p = p1.projectile;
+            p.trail.push({ x: p.x, y: p.y });
+            if (p.trail.length > 20) p.trail.shift();
+
+            p.x += p.vx * 3;
+            p.y += p.vy * 3;
+            p.vy += 0.12; // Gravity
+
+            // Target collision check
+            let dist = Math.hypot(p.x - p.targetX, p.y - p.targetY);
+            if (dist < p1.targetR) {
+                sfx.hit();
+                addScore(1000);
+                p1.projectile = null;
+                setTimeout(() => {
+                    startPhaseTutorial(2);
+                }, 1000);
+                return;
+            }
+
+            // Out of bounds
+            if (p.x > canvas.width || p.y > canvas.height || p.x < 0) {
+                sfx.fail();
+                p1.projectile = null;
+                p1.attempts--;
+                if (p1.attempts <= 0) {
+                    p1.attempts = 3; // Reset attempts
+                }
+            }
+        }
+
+        function drawP1() {
+            // Background Environment
+            ctx.fillStyle = '#090d16';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Ground & Cliff
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 480, canvas.width, 60);
+
+            // Target
+            ctx.beginPath();
+            ctx.arc(p1.targetX, p1.targetY, p1.targetR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(p1.targetX, p1.targetY, p1.targetR * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+
+            // Cannon Base
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.arc(p1.cannonX, p1.cannonY, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cannon Barrel
+            let rad = p1.angle * (Math.PI / 180);
+            ctx.save();
+            ctx.translate(p1.cannonX, p1.cannonY);
+            ctx.rotate(-rad);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(0, -10, 50, 20);
+            ctx.restore();
+
+            // Trigonometric Vector Breakdown Visualization
+            let vectorLen = p1.power * 1.8;
+            let targetVectorX = p1.cannonX + vectorLen * Math.cos(rad);
+            let targetVectorY = p1.cannonY - vectorLen * Math.sin(rad);
+
+            // Hypotenuse Vector
+            ctx.strokeStyle = '#ec4899';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(p1.cannonX, p1.cannonY);
+            ctx.lineTo(targetVectorX, targetVectorY);
+            ctx.stroke();
+
+            // Adjacent Cathetus (Cos)
+            ctx.strokeStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(p1.cannonX, p1.cannonY);
+            ctx.lineTo(targetVectorX, p1.cannonY);
+            ctx.stroke();
+
+            // Opposite Cathetus (Sen)
+            ctx.strokeStyle = '#10b981';
+            ctx.beginPath();
+            ctx.moveTo(targetVectorX, p1.cannonY);
+            ctx.lineTo(targetVectorX, targetVectorY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Labels on Vectors
+            ctx.font = '12px Rajdhani';
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText(`Adj (cos): ${(p1.power * Math.cos(rad)).toFixed(1)}`, p1.cannonX + vectorLen/2 - 20, p1.cannonY + 18);
+
+            ctx.fillStyle = '#10b981';
+            ctx.fillText(`Oposto (sen): ${(p1.power * Math.sin(rad)).toFixed(1)}`, targetVectorX + 8, p1.cannonY - (targetVectorY - p1.cannonY)*-0.5);
+
+            ctx.fillStyle = '#ec4899';
+            ctx.fillText(`H = ${p1.power}`, p1.cannonX + vectorLen/2 - 20, targetVectorY - 10);
+
+            // Draw Angle Arc
+            ctx.beginPath();
+            ctx.arc(p1.cannonX, p1.cannonY, 40, 0, -rad, true);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`θ=${p1.angle}°`, p1.cannonX + 45, p1.cannonY - 10);
+
+            // Projectile
+            if (p1.projectile) {
+                let p = p1.projectile;
+
+                // Trail
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                p.trail.forEach((t, i) => {
+                    if (i === 0) ctx.moveTo(t.x, t.y);
+                    else ctx.lineTo(t.x, t.y);
+                });
+                ctx.stroke();
+
+                // Ball
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#f87171';
+                ctx.fill();
+            }
+
+            // HUD Attempts
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '14px "Press Start 2P"';
+            ctx.fillText(`TENTATIVAS: ${p1.attempts}`, 30, 40);
+        }
+
+        // --- PHASE 2 LOGIC ---
+        function initPhase2() {
+            p2.hero = { x: 100, y: 450, progress: 0, active: false };
+            p2.coins = [
+                { x: 300, y: 0, collected: false },
+                { x: 480, y: 0, collected: false },
+                { x: 660, y: 0, collected: false }
+            ];
+            updateP2CoinPositions();
+        }
+
+        function updateP2CoinPositions() {
+            // Coins positioned around ideal parabolic path
+            p2.coins[0].y = 450 - 120;
+            p2.coins[1].y = 450 - 200;
+            p2.coins[2].y = 450 - 120;
+        }
+
+        function getParabolaY(x) {
+            // Vertex form: f(x) = a*(x - xv)^2 + yv (canvas inverted Y)
+            // Real apex height relative to ground (y = 450)
+            let apexCanvasY = 450 - p2.yv;
+            return p2.a * Math.pow(x - p2.xv, 2) + apexCanvasY;
+        }
+
+        function launchP2() {
+            if (p2.hero.active) return;
+            sfx.shoot();
+            p2.hero.x = 100;
+            p2.hero.progress = 0;
+            p2.hero.active = true;
+            p2.coins.forEach(c => c.collected = false);
+        }
+
+        function updateP2() {
+            if (!p2.hero.active) return;
+
+            p2.hero.x += 4;
+            p2.hero.y = getParabolaY(p2.hero.x);
+
+            // Collect Coins
+            p2.coins.forEach(c => {
+                if (!c.collected && Math.hypot(p2.hero.x - c.x, p2.hero.y - c.y) < 25) {
+                    c.collected = true;
+                    sfx.coin();
+                    addScore(250);
+                }
+            });
+
+            // Reached Portal / Ground
+            if (p2.hero.x >= p2.portal.x) {
+                p2.hero.active = false;
+                sfx.hit();
+                addScore(500);
+                setTimeout(() => {
+                    startPhaseTutorial(3);
+                }, 1000);
+            } else if (p2.hero.y > 480) { // Touch Ground
+                p2.hero.active = false;
+                sfx.fail();
+            }
+        }
+
+        function drawP2() {
+            // Dark Futuristic Background
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground & Chasms
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 450, 180, 90);
+            ctx.fillRect(780, 450, 180, 90);
+
+            // Lava / Pit
+            ctx.fillStyle = '#7f1d1d';
+            ctx.fillRect(180, 500, 600, 40);
+            ctx.fillStyle = '#ef4444';
+            ctx.font = '12px "Press Start 2P"';
+            ctx.fillText("ABISMO QUADRÁTICO", 360, 525);
+
+            // Draw Parabola Trajectory Line
+            ctx.beginPath();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 6]);
+            for (let x = 100; x <= 860; x += 5) {
+                let y = getParabolaY(x);
+                if (x === 100) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Vertex Marker
+            let apexY = 450 - p2.yv;
+            ctx.fillStyle = '#ec4899';
+            ctx.beginPath();
+            ctx.arc(p2.xv, apexY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '14px Rajdhani';
+            ctx.fillText(`Vértice (${Math.round(p2.xv)}, ${Math.round(p2.yv)})`, p2.xv - 40, apexY - 15);
+
+            // Draw Coins
+            p2.coins.forEach(c => {
+                if (!c.collected) {
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = '#eab308';
+                    ctx.fill();
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.fillStyle = '#78350f';
+                    ctx.font = 'bold 12px Rajdhani';
+                    ctx.fillText('$', c.x - 3, c.y + 4);
+                }
+            });
+
+            // Draw Portal
+            ctx.beginPath();
+            ctx.arc(p2.portal.x, p2.portal.y - 20, p2.portal.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw Hero
+            let hx = p2.hero.active ? p2.hero.x : 100;
+            let hy = p2.hero.active ? p2.hero.y : 450 - 15;
+
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(hx - 12, hy - 24, 24, 24); // Head/Body
+            ctx.fillStyle = '#60a5fa';
+            ctx.fillRect(hx - 8, hy - 20, 8, 8); // Visor
+
+            // Function Overlay Display
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = '14px "Press Start 2P"';
+            ctx.fillText(`f(x) = ${p2.a.toFixed(3)}(x - ${Math.round(p2.xv)})² + ${Math.round(p2.yv)}`, 200, 50);
+        }
+
+        // --- PHASE 3 LOGIC ---
+        function initPhase3() {
+            p3.targetEnergy = Math.floor(10 * Math.pow(1.8, 4)); // ~34
+            p3.currentVirus = 10;
+            p3.timeElapsed = 0;
+            p3.pulsesLeft = 3;
+            p3.active = true;
+            generateP3Threat();
+        }
+
+        function generateP3Threat() {
+            p3.b_target = (1.3 + Math.random() * 0.8).toFixed(1);
+            p3.t_target = Math.floor(2 + Math.random() * 4);
+            p3.targetEnergy = Math.floor(10 * Math.pow(p3.b_target, p3.t_target));
+        }
+
+        function pulseP3() {
+            if (p3.pulsesLeft <= 0) return;
+
+            let playerEnergy = Math.floor(10 * Math.pow(p3.b, p3.t));
+            let diff = Math.abs(playerEnergy - p3.targetEnergy);
+
+            if (diff <= 8) { // Success Margin
+                sfx.hit();
+                addScore(1000);
+                p3.pulsesLeft--;
+                if (p3.pulsesLeft <= 0) {
+                    triggerWin();
+                } else {
+                    generateP3Threat();
+                }
+            } else {
+                sfx.fail();
+                addScore(-100);
+            }
+        }
+
+        function updateP3() {
+            p3.timeElapsed += 0.016;
+            p3.currentVirus = 10 * Math.pow(1.05, p3.timeElapsed * 5);
+        }
+
+        function drawP3() {
+            // Lab Cyberpunk Background
+            ctx.fillStyle = '#050811';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid Background
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.15)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 30) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+
+            // Exponential Target Curve Graph Area
+            let originX = 100;
+            let originY = 450;
+            let graphWidth = 400;
+            let graphHeight = 350;
+
+            // Graph Axes
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY - graphHeight);
+            ctx.lineTo(originX, originY);
+            ctx.lineTo(originX + graphWidth, originY);
+            ctx.stroke();
+
+            // Draw Target Exponential Curve f(t) = 10 * b^t
+            ctx.beginPath();
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 3;
+            for (let t = 0; t <= 6; t += 0.1) {
+                let val = 10 * Math.pow(p3.b_target, t);
+                let gx = originX + (t / 6) * graphWidth;
+                let gy = originY - (val / 150) * graphHeight;
+                if (t === 0) ctx.moveTo(gx, gy);
+                else ctx.lineTo(gx, gy);
+            }
+            ctx.stroke();
+
+            // Draw Player's Predicted Curve
+            ctx.beginPath();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            for (let t = 0; t <= 6; t += 0.1) {
+                let val = 10 * Math.pow(p3.b, t);
+                let gx = originX + (t / 6) * graphWidth;
+                let gy = originY - (val / 150) * graphHeight;
+                if (t === 0) ctx.moveTo(gx, gy);
+                else ctx.lineTo(gx, gy);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Target Point Marker on Graph
+            let targetGx = originX + (p3.t_target / 6) * graphWidth;
+            let targetGy = originY - (p3.targetEnergy / 150) * graphHeight;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(targetGx, targetGy, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Player Point Marker
+            let playerVal = Math.floor(10 * Math.pow(p3.b, p3.t));
+            let playerGx = originX + (p3.t / 6) * graphWidth;
+            let playerGy = originY - (playerVal / 150) * graphHeight;
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(playerGx, playerGy, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right Monitor Side: Threat Containment Visualizer
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(560, 80, 350, 370);
+            ctx.strokeStyle = '#334155';
+            ctx.strokeRect(560, 80, 350, 370);
+
+            // Virus Core Visualizer
+            let virusRadius = Math.min(120, 20 + p3.targetEnergy * 1.2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.beginPath();
+            ctx.arc(735, 220, virusRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // HUD Monitor Info
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '12px "Press Start 2P"';
+            ctx.fillText(`AMEAÇA EXPOSENCIAL`, 580, 120);
+
+            ctx.font = '16px Rajdhani';
+            ctx.fillStyle = '#a855f7';
+            ctx.fillText(`Alvo Desejado em t=${p3.t_target}: ${p3.targetEnergy} MW`, 580, 160);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`Sua Carga Calculada: ${playerVal} MW`, 580, 340);
+            ctx.fillText(`Fórmula: E(t) = 10 · (${p3.b})ᵗ`, 580, 370);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = '12px "Press Start 2P"';
+            ctx.fillText(`CARGAS RESTANTES: ${p3.pulsesLeft}`, 580, 420);
+        }
+
+        // --- MAIN GAME LOOP ---
+        function gameLoop() {
+            if (gameState === 'PLAYING') {
+                if (currentPhase === 1) {
+                    updateP1();
+                    drawP1();
+                } else if (currentPhase === 2) {
+                    updateP2();
+                    drawP2();
+                } else if (currentPhase === 3) {
+                    updateP3();
+                    drawP3();
+                }
+            } else {
+                // Background rendering during tutorial/menu
+                if (currentPhase === 1) drawP1();
+                else if (currentPhase === 2) drawP2();
+                else if (currentPhase === 3) drawP3();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start Loop
+        window.onload = () => {
+            gameLoop();
+        };
+
+    </script>
+</body>
+</html>
